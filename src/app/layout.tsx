@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+import React from 'react';
+import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Tourba",
-  description: "Your tour management solution",
+  title: 'Financial Advisor Bot',
+  description: 'Your personal financial advisor',
 };
 
 export default function RootLayout({
@@ -11,8 +13,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="he" dir="rtl">
+      <body>
+        <div className="min-h-screen">
+          {children}
+        </div>
+      </body>
     </html>
   );
 } 
