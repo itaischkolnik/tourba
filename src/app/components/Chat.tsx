@@ -7,7 +7,7 @@ interface ChatHistory {
   isBot: boolean;
   gif?: string;
   buttons?: string[];
-  inputType?: InputType;
+  inputType?: 'text' | 'number' | 'email' | 'tel' | 'radio' | 'select' | 'time' | 'date' | 'checkbox';
   required?: boolean;
   inputValidation?: (value: string) => boolean;
   options?: string[];
@@ -17,8 +17,6 @@ interface ChatHistory {
   shouldAnimate?: boolean;
   isIntro?: boolean;
 }
-
-type InputType = 'number' | 'text' | 'email' | 'tel' | 'radio' | 'select' | 'time' | 'date' | 'checkbox';
 
 interface UserAnswers {
   [key: string]: string;
@@ -203,7 +201,7 @@ const Chat: React.FC = () => {
         // Check if this question should be shown based on conditions
         if (candidateQuestion.condition) {
           const { field: conditionField, value } = candidateQuestion.condition;
-          const answer = newAnswers[conditionField];
+          const answer = typeof conditionField === 'string' ? newAnswers[conditionField] : '';
           console.log('Checking condition:', { conditionField, value, answer });
 
           const shouldShow = Array.isArray(value)
@@ -513,11 +511,14 @@ const Chat: React.FC = () => {
 
   const isStepValid = (step: ConversationStep, answers: UserAnswers): boolean => {
     if (!step.condition) return true;
+    
     const { field, value } = step.condition;
+    const answer = typeof field === 'string' ? answers[field] : '';
+    
     if (Array.isArray(value)) {
-      return value.includes(answers[field]);
+      return value.includes(answer);
     }
-    return answers[field] === value;
+    return answer === value;
   };
 
   const getFieldName = (step: ConversationStep): string => {
