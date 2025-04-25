@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ChatMessage from './ChatMessage';
-import { conversationSteps, ConversationStep } from '@/app/data/conversation';
+import type { ConversationStep } from '@/app/data/conversation';
+import { conversationSteps } from '@/app/data/conversation';
 
 interface ChatHistory {
   message: string;
   isBot: boolean;
   gif?: string;
   buttons?: string[];
-  inputType?: 'text' | 'number' | 'email' | 'tel' | 'radio' | 'select' | 'time' | 'date' | 'checkbox';
+  inputType?: ConversationStep['inputType'];
   required?: boolean;
   inputValidation?: (value: string) => boolean;
   options?: string[];
