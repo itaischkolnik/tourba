@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Financial Advisor Bot',
-  description: 'Your personal financial advisor',
+  title: 'תּוּר בָּה - חוויות תוכן וטיולים',
+  description: 'ימי תוכן, סיורים ופעילויות חווייתיות',
 };
 
 export default function RootLayout({
@@ -13,9 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="he" dir="rtl">
-      <body>
-        <div className="min-h-screen">
+    <html lang="he" dir="rtl" style={{ backgroundColor: '#342e1e' }}>
+      <body style={{ backgroundColor: '#342e1e', margin: 0, minHeight: '100vh' }}>
+        <div style={{ backgroundColor: '#342e1e', minHeight: '100vh', width: '100%' }}>
           {children}
         </div>
       </body>

@@ -28,12 +28,14 @@ const WEBHOOK_URL = 'https://hook.eu2.make.com/u3bylg7fkjl6x4gx9t6jpntol3h9ry7u'
 const Chat: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentStep, setCurrentStep] = useState<ConversationStep>(conversationSteps[0]);
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [userAnswers, setUserAnswers] = useState<UserAnswers>({});
   const [currentSectionQuestion, setCurrentSectionQuestion] = useState<number>(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const latestInputRef = useRef<HTMLInputElement>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -73,11 +75,11 @@ const Chat: React.FC = () => {
           isBot: true,
           gif: currentStep.gif,
           buttons: currentStep.buttons,
-          inputType: currentStep.inputType,
-          placeholder: currentStep.placeholder || getPlaceholder(currentStep.inputType),
-          inputValidation: currentStep.validation,
+          inputType: (currentStep as { inputType?: ConversationStep['inputType'] }).inputType,
+          placeholder: (currentStep as { placeholder?: string }).placeholder || getPlaceholder((currentStep as { inputType?: ConversationStep['inputType'] }).inputType),
+          inputValidation: (currentStep as { validation?: (value: string) => boolean }).validation,
           isSection: (currentStep as { isSection?: boolean }).isSection,
-          options: currentStep.options
+          options: (currentStep as { options?: string[] }).options
         }
       ]);
       setCurrentStep({
@@ -149,6 +151,13 @@ const Chat: React.FC = () => {
       const question = currentStep.sectionQuestions[currentSectionQuestion];
       console.log('Handling section question:', question);
       
+      // Validate input if validation function exists
+      if ((question as { validation?: (value: string) => boolean }).validation && 
+          !(question as { validation?: (value: string) => boolean }).validation!(input)) {
+        console.log('Input validation failed');
+        return;
+      }
+
       // Add user's answer
       setChatHistory(prev => [...prev, { message: input, isBot: false }]);
       
@@ -227,11 +236,11 @@ const Chat: React.FC = () => {
         setChatHistory(prev => [...prev, {
           message: nextQuestion.message,
           isBot: true,
-          inputType: nextQuestion.inputType,
-          required: nextQuestion.required,
-          inputValidation: nextQuestion.validation,
-          options: nextQuestion.options,
-          placeholder: nextQuestion.placeholder
+          inputType: (nextQuestion as { inputType?: ConversationStep['inputType'] }).inputType,
+          required: (nextQuestion as { required?: boolean }).required,
+          inputValidation: (nextQuestion as { validation?: (value: string) => boolean }).validation,
+          options: (nextQuestion as { options?: string[] }).options,
+          placeholder: (nextQuestion as { placeholder?: string }).placeholder
         }]);
       } else {
         console.log('No more questions in section, moving to next step');
@@ -261,12 +270,16 @@ const Chat: React.FC = () => {
               });
               setCurrentSectionQuestion(0);
 
-              // Create section message
+              // Create section message with explicit title and description
+              const [title, description] = nextStep.message.split('\n\n');
+              const cleanTitle = title.replace(/\*\*/g, '');
               const sectionMessage = {
                 message: nextStep.message,
                 isBot: true,
                 isSection: true,
-                shouldAnimate: true
+                shouldAnimate: true,
+                title: cleanTitle,
+                description: description
               };
               
               // Clear and set new section
@@ -426,8 +439,8 @@ const Chat: React.FC = () => {
     // Find the next step in sequence
     const nextStep = conversationSteps.find(step => {
       console.log('Checking step:', { 
-        stepId: step.id,
-        currentId: currentId,
+        stepId: step.id, 
+        currentId: currentId, 
         nextExpectedId: currentId + 1,
         isSection: step.isSection,
         hasCondition: !!step.condition
@@ -538,6 +551,97 @@ const Chat: React.FC = () => {
       case 6: return 'services';
       case 7: return 'final';
       default: return `step${step.id}`;
+    }
+  };
+
+  const handleNextStep = async () => {
+    setIsTransitioning(true);
+    
+    const nextStepIndex = currentStepIndex + 1;
+    if (nextStepIndex < conversationSteps.length) {
+      const nextStep = conversationSteps[nextStepIndex];
+      console.log('Next step:', nextStep);
+      
+      if (nextStep.isSection) {
+        setCurrentSectionQuestion(0);
+        const [title, description] = nextStep.message.split('\n\n');
+        const cleanTitle = title.replace(/\*\*/g, '');
+        
+        // Clear messages first
+        setChatHistory([]);
+        
+        // Add new section message after a short delay
+        setTimeout(() => {
+          const sectionMessage = {
+            message: nextStep.message,
+            isBot: true,
+            isSection: true,
+            shouldAnimate: true,
+            title: cleanTitle,
+            description: description
+          };
+          setChatHistory([sectionMessage]);
+          
+          // Reset transition state after animation
+          setTimeout(() => {
+            setIsTransitioning(false);
+          }, 500);
+        }, 100);
+        
+        setCurrentStepIndex(nextStepIndex);
+        setCurrentStep(nextStep);
+        return;
+      }
+
+      // Handle regular conversation steps
+      // Only add user message for text inputs, not button clicks
+      if (nextStep.inputType) {
+        setChatHistory((prev) => [
+          ...prev,
+          { message: nextStep.message, isBot: false }
+        ]);
+      }
+
+      // Save user answer and find next step
+      const field = getFieldName(nextStep);
+      console.log('Saving answer for field:', field, 'value:', nextStep.message);
+      
+      // Update answers first
+      const newAnswers = { ...userAnswers, [field]: nextStep.message };
+      setUserAnswers(newAnswers);
+      console.log('Updated user answers:', newAnswers);
+
+      // Find next step using updated answers
+      const nextStepAfter = findNextStepWithAnswers(nextStep.id, nextStep.message, newAnswers);
+      console.log('Next step found:', nextStepAfter);
+      
+      if (nextStepAfter) {
+        console.log('Moving to next step:', { 
+          id: nextStepAfter.id, 
+          message: nextStepAfter.message,
+          condition: nextStepAfter.condition
+        });
+
+        // If this is the last step (step 21), send answers to webhook
+        if (nextStepAfter.id === 21) {
+          sendAnswersToWebhook();
+        }
+
+        setCurrentStepIndex(nextStepIndex);
+        setCurrentStep(nextStep);
+        setChatHistory(prev => [...prev, {
+          message: nextStepAfter.message,
+          isBot: true,
+          gif: nextStepAfter.gif,
+          buttons: nextStepAfter.buttons,
+          inputType: nextStepAfter.inputType,
+          placeholder: nextStepAfter.placeholder,
+          inputValidation: nextStepAfter.validation,
+          isSection: nextStepAfter.isSection
+        }]);
+      } else {
+        console.log('No next step found after current step:', nextStep.id);
+      }
     }
   };
 

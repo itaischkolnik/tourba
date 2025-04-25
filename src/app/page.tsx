@@ -4,7 +4,7 @@ import Chat from './components/Chat';
 
 export default function HomePage() {
   return (
-    <div className="h-screen">
+    <div className="h-screen bg-[#ffebb9]">
       <Chat />
     </div>
   );
