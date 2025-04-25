@@ -76,7 +76,7 @@ const Chat: React.FC = () => {
           inputType: currentStep.inputType,
           placeholder: currentStep.placeholder || getPlaceholder(currentStep.inputType),
           inputValidation: currentStep.validation,
-          isSection: currentStep.isSection,
+          isSection: (currentStep as { isSection?: boolean }).isSection,
           options: currentStep.options
         }
       ]);
@@ -251,7 +251,7 @@ const Chat: React.FC = () => {
           console.log('Next step after section:', nextStep);
           
           if (nextStep) {
-            if (nextStep.isSection) {
+            if ((nextStep as { isSection?: boolean }).isSection) {
               console.log('Transitioning to new section:', nextStep);
               
               // Set the next step first with isTransitioning true
@@ -524,7 +524,7 @@ const Chat: React.FC = () => {
 
   const getFieldName = (step: ConversationStep): string => {
     // For section questions, use a different naming scheme
-    if (step.isSection && step.sectionQuestions) {
+    if ((step as { isSection?: boolean }).isSection && step.sectionQuestions) {
       return `section${step.id}`;
     }
 
