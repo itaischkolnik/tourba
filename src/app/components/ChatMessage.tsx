@@ -158,11 +158,11 @@ const ChatMessage = forwardRef<HTMLInputElement, ChatMessageProps>(({
     console.log('Split description:', description);
     
     return (
-      <div className={`bg-gray-50 p-6 rounded-lg shadow-sm mb-6 ${shouldAnimate ? 'animate-slide-in' : ''}`}>
-        <h2 className="text-xl font-semibold mb-3 text-gray-800">
+      <div className={`mb-6 ${shouldAnimate ? 'animate-slide-in' : ''}`}>
+        <h2 className="text-2xl font-bold mb-3 text-[#e0a711]">
           {title}
         </h2>
-        <p className="text-gray-600">
+        <p className="text-white text-lg">
           {description}
         </p>
       </div>
